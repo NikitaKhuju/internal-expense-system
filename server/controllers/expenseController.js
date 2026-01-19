@@ -1,22 +1,28 @@
 import Expense from "../models/Expense.js";
 
-//Create Expense
+// Create Expense
 export const createExpense = async (req, res) => {
   try {
-    const { title, amount, category, date } = req.body;
+    const { purpose, amount, category, date, flag } = req.body;
 
-    if (!title || !amount || !category) {
+    // Required fields check
+    if (!purpose || !amount || !category) {
       return res
         .status(400)
         .json({ message: "Please provide all required fields" });
     }
 
     const expense = await Expense.create({
-      title,
+      purpose,
       amount,
       category,
       date: date || Date.now(),
-      user: req.user.id, //from JWT middleware
+      flag: flag || "Low", // default flag if not provided
+      status: "Pending", // default status
+      submitter: {
+        id: req.user.id,
+        name: req.user.name,
+      }, // link to logged-in user
     });
 
     res.status(201).json(expense);
@@ -25,15 +31,14 @@ export const createExpense = async (req, res) => {
   }
 };
 
-//get all expenses
-
+// Get all expenses
 export const getExpenses = async (req, res) => {
   try {
     let expenses;
     if (req.user.role === "admin") {
-      expenses = await Expense.find().populate("user", "name email role");
+      expenses = await Expense.find().populate("submitter", "name email role");
     } else {
-      expenses = await Expense.find({ user: req.user.id });
+      expenses = await Expense.find({ submitter: req.user.id });
     }
     res.json(expenses);
   } catch (error) {
@@ -41,23 +46,34 @@ export const getExpenses = async (req, res) => {
   }
 };
 
-//Update expense
-
+// Update expense (admin can update status, submitter can update their own expense)
 export const updateExpense = async (req, res) => {
   try {
     const expense = await Expense.findById(req.params.id);
     if (!expense) return res.status(404).json({ message: "Expense not found" });
 
-    if (req.user.role !== "admin" && expense.user.toString() !== req.user.id) {
+    const { purpose, amount, category, date, status, flag } = req.body;
+
+    // Only admin can update status
+    if (status && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Only admin can update status" });
+    }
+
+    // Only submitter or admin can update other fields
+    if (
+      req.user.role !== "admin" &&
+      expense.submitter.toString() !== req.user.id
+    ) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    const { title, amount, category, date } = req.body;
-
-    expense.title = title || expense.title;
+    // Update fields
+    expense.purpose = purpose || expense.purpose;
     expense.amount = amount || expense.amount;
     expense.category = category || expense.category;
     expense.date = date || expense.date;
+    expense.flag = flag || expense.flag;
+    if (status && req.user.role === "admin") expense.status = status;
 
     const updated = await expense.save();
     res.json(updated);
@@ -66,14 +82,16 @@ export const updateExpense = async (req, res) => {
   }
 };
 
-// delete expense
-
+// Delete expense
 export const deleteExpense = async (req, res) => {
   try {
     const expense = await Expense.findById(req.params.id);
     if (!expense) return res.status(404).json({ message: "Expense not found" });
 
-    if (req.user.role !== "admin" && expense.user.toString() !== req.user.id) {
+    if (
+      req.user.role !== "admin" &&
+      expense.submitter.toString() !== req.user.id
+    ) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
