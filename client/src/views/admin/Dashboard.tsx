@@ -23,7 +23,6 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import { Sidebar } from "@/components/Sidebar";
 import LogoutAlertDialog from "@/components/logout-alert-dialog";
 import type {
   Expense,
@@ -31,6 +30,8 @@ import type {
   ExpenseCategory,
   ExpenseFlag,
 } from "@/models/expense.model";
+import { Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // -------- Mock Data --------
 const staffExpenses: Expense[] = [
@@ -107,10 +108,10 @@ export default function Dashboard() {
     Rejected: "bg-red-100 text-red-700",
   };
 
+  const navigate = useNavigate();
+
   return (
     <div className="flex h-screen">
-      <Sidebar open={true} toggle={() => {}} />
-
       <div className="flex-1 p-6 bg-gray-50 overflow-auto">
         <div className="flex justify-between items-center py-3">
           <p className="font-semibold text-lg">Dashboard</p>
@@ -125,7 +126,13 @@ export default function Dashboard() {
 
         <div className="flex justify-between mb-6">
           <h1 className="text-2xl font-bold">Expense Dashboard Overview</h1>
-          <Button>+ Add Expense</Button>
+          <Button
+            onClick={() => navigate("/addExpense")}
+            variant="default"
+            className="flex items-center gap-2"
+          >
+            <Plus size={16} /> Add Expense
+          </Button>
         </div>
 
         <div className="grid md:grid-cols-4 gap-4 mb-6">

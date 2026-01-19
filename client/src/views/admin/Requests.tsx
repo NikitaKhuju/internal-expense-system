@@ -24,6 +24,7 @@ import {
   type ExpenseCategory,
   type ExpenseFlag,
 } from "@/models/expense.model";
+import { Sidebar } from "@/components/Sidebar";
 
 const expenses: Expense[] = [
   {
@@ -96,100 +97,102 @@ export default function Requests() {
   }, [purposeSearch, submitterSearch, categoryFilter, flagFilter]);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold mb-6">Pending Requests</h1>
-      <Card className="mb-6">
-        <CardContent className="p-4 flex flex-wrap items-center gap-4">
-          <Input
-            placeholder="Search by purpose..."
-            className="w-64"
-            value={purposeSearch}
-            onChange={(e) => setPurposeSearch(e.target.value)}
-          />
-          <Input
-            placeholder="Search by submitter..."
-            className="w-64"
-            value={submitterSearch}
-            onChange={(e) => setSubmitterSearch(e.target.value)}
-          />
+    <div className="flex h-screen">
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <h1 className="text-2xl font-bold mb-6">Pending Requests</h1>
+        <Card className="mb-6">
+          <CardContent className="p-4 flex flex-wrap items-center gap-4">
+            <Input
+              placeholder="Search by purpose..."
+              className="w-64"
+              value={purposeSearch}
+              onChange={(e) => setPurposeSearch(e.target.value)}
+            />
+            <Input
+              placeholder="Search by submitter..."
+              className="w-64"
+              value={submitterSearch}
+              onChange={(e) => setSubmitterSearch(e.target.value)}
+            />
 
-          <Select
-            value={categoryFilter}
-            onValueChange={(v) =>
-              setCategoryFilter(v as ExpenseCategory | "all")
-            }
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Filter by category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              <SelectItem value="IT">IT</SelectItem>
-              <SelectItem value="Food">Food</SelectItem>
-              <SelectItem value="Stationery">Stationery</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select
+              value={categoryFilter}
+              onValueChange={(v) =>
+                setCategoryFilter(v as ExpenseCategory | "all")
+              }
+            >
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="IT">IT</SelectItem>
+                <SelectItem value="Food">Food</SelectItem>
+                <SelectItem value="Stationery">Stationery</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select
-            value={flagFilter}
-            onValueChange={(v) => setFlagFilter(v as ExpenseFlag | "all")}
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Filter by flag" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Flags</SelectItem>
-              <SelectItem value="Low">Low</SelectItem>
-              <SelectItem value="Medium">Medium</SelectItem>
-              <SelectItem value="High">High</SelectItem>
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
-      //Table
-      <Card>
-        <CardHeader>
-          <CardTitle>Pending Expense Requests</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Purpose</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Submitter</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Flag</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+            <Select
+              value={flagFilter}
+              onValueChange={(v) => setFlagFilter(v as ExpenseFlag | "all")}
+            >
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by flag" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Flags</SelectItem>
+                <SelectItem value="Low">Low</SelectItem>
+                <SelectItem value="Medium">Medium</SelectItem>
+                <SelectItem value="High">High</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
 
-            <TableBody>
-              {pendingExpenses.map((e) => (
-                <TableRow key={e.id}>
-                  <TableCell>{e.purpose}</TableCell>
-                  <TableCell>{e.category}</TableCell>
-                  <TableCell>{e.submitter.name}</TableCell>
-                  <TableCell>Rs. {e.amount}</TableCell>
-                  <TableCell>{e.date}</TableCell>
-                  <TableCell>
-                    <Badge className={flagColor[e.flag]}>{e.flag}</Badge>
-                  </TableCell>
-                  <TableCell className="space-x-2">
-                    <Button size="sm" variant="outline">
-                      Approve
-                    </Button>
-                    <Button size="sm" variant="destructive">
-                      Reject
-                    </Button>
-                  </TableCell>
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending Expense Requests</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Purpose</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Submitter</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Flag</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+
+              <TableBody>
+                {pendingExpenses.map((e) => (
+                  <TableRow key={e.id}>
+                    <TableCell>{e.purpose}</TableCell>
+                    <TableCell>{e.category}</TableCell>
+                    <TableCell>{e.submitter.name}</TableCell>
+                    <TableCell>Rs. {e.amount}</TableCell>
+                    <TableCell>{e.date}</TableCell>
+                    <TableCell>
+                      <Badge className={flagColor[e.flag]}>{e.flag}</Badge>
+                    </TableCell>
+                    <TableCell className="space-x-2">
+                      <Button size="sm" variant="outline">
+                        Approve
+                      </Button>
+                      <Button size="sm" variant="destructive">
+                        Reject
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
