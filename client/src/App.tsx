@@ -1,19 +1,19 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./views/Login";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import Login from "./views/auth/Login";
+import Dashboard from "./views/admin/Dashboard";
+import AddExpense from "./views/AddExpense";
+import AddStaff from "./views/admin/AddStaff";
+import StaffDashboard from "./views/staff/StaffDashboard";
+import Expenses from "./views/admin/Expenses";
+import Requests from "./views/admin/Requests";
 
-const App = () => {
-  const isAuthenticated = Boolean(localStorage.getItem("token"));
-
+function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route
-          path="/"
-          element={isAuthenticated ? <Navigate to="/expenses" /> : <Login />}
-        />
-      </Routes>
-    </BrowserRouter>
+    <div>
+      <StaffDashboard />
+    </div>
   );
-};
+}
 
 export default App;
