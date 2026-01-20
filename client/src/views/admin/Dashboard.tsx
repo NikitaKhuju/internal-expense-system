@@ -1,5 +1,3 @@
-// src/pages/Dashboard.tsx
-import React from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,58 +22,47 @@ import {
   Legend,
 } from "recharts";
 import LogoutAlertDialog from "@/components/logout-alert-dialog";
-import type {
-  Expense,
-  ExpenseStatus,
-  ExpenseCategory,
-  ExpenseFlag,
-} from "@/models/expense.model";
+import type { ExpenseStatus } from "@/models/expense.model";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-// -------- Mock Data --------
-const staffExpenses: Expense[] = [
-  {
-    id: 1,
-    purpose: "Office Supplies",
-    category: "Stationery",
-    amount: 5000,
-    date: "2026-01-15",
-    status: "Approved",
-    flag: "Low",
-    submitter: { id: "u1", name: "John" },
-  },
-  {
-    id: 2,
-    purpose: "Team Lunch",
-    category: "Food",
-    amount: 12000,
-    date: "2026-01-14",
-    status: "Pending",
-    flag: "Medium",
-    submitter: { id: "u2", name: "Mary" },
-  },
-  {
-    id: 3,
-    purpose: "Software License",
-    category: "IT",
-    amount: 30000,
-    date: "2026-01-10",
-    status: "Rejected",
-    flag: "High",
-    submitter: { id: "u3", name: "Alice" },
-  },
-];
+import { useEffect, useMemo } from "react";
+import { useAuth } from "@/App";
+import { useExpenseViewModel } from "@/viewmodels/useExpenseViewModel";
 
 // -------- Pie Chart Colors --------
 const COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"];
 
 export default function Dashboard() {
+  const { expenses, loading, error, fetchExpenses } = useExpenseViewModel();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  // Get user from localStorage
+  const user = useMemo(() => {
+    const userData = localStorage.getItem("user");
+    return userData ? JSON.parse(userData) : null;
+  }, []);
+
+  useEffect(() => {
+    fetchExpenses();
+  }, []);
   // Status counts
-  const approved = staffExpenses.filter((e) => e.status === "Approved");
-  const pending = staffExpenses.filter((e) => e.status === "Pending");
-  const rejected = staffExpenses.filter((e) => e.status === "Rejected");
-  const totalApprovedAmount = approved.reduce((sum, e) => sum + e.amount, 0);
+  const approved = useMemo(
+    () => expenses.filter((e) => e.status === "Approved"),
+    [expenses]
+  );
+  const pending = useMemo(
+    () => expenses.filter((e) => e.status === "Pending"),
+    [expenses]
+  );
+  const rejected = useMemo(
+    () => expenses.filter((e) => e.status === "Rejected"),
+    [expenses]
+  );
+  const totalApprovedAmount = useMemo(
+    () => approved.reduce((sum, e) => sum + e.amount, 0),
+    [approved]
+  );
 
   // Pie chart data: Approved by category
   const approvedByCategory = Object.values(
@@ -91,15 +78,22 @@ export default function Dashboard() {
   );
 
   // Line chart data: Amount by date
-  const lineData = staffExpenses.map((e) => ({
-    date: e.date,
-    amount: e.amount,
-  }));
+  const lineData = useMemo(() => {
+    return expenses.map((e) => ({
+      date: new Date(e.date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      amount: e.amount,
+    }));
+  }, [expenses]);
 
   // Sort expenses by date descending
-  const sortedExpenses = [...staffExpenses].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  const sortedExpenses = useMemo(() => {
+    return [...expenses].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+  }, [expenses]);
 
   // Status badge colors
   const statusColor: Record<ExpenseStatus, string> = {
@@ -108,7 +102,17 @@ export default function Dashboard() {
     Rejected: "bg-red-100 text-red-700",
   };
 
-  const navigate = useNavigate();
+  const handleLogout = () => {
+    logout();
+  };
+
+  if (loading && expenses.length === 0) {
+    return (
+      <div className="p-6 flex items-center justify-center h-screen">
+        <p className="text-lg">Loading dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen">
@@ -116,13 +120,16 @@ export default function Dashboard() {
         <div className="flex justify-between items-center py-3">
           <p className="font-semibold text-lg">Dashboard</p>
           <LogoutAlertDialog
-            userName="Nikita Khuju"
-            onLogout={() => {
-              localStorage.removeItem("token");
-              window.location.href = "/login";
-            }}
+            userName={user?.name || "Admin"}
+            onLogout={handleLogout}
           />
         </div>
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
 
         <div className="flex justify-between mb-6">
           <h1 className="text-2xl font-bold">Expense Dashboard Overview</h1>
@@ -227,40 +234,48 @@ export default function Dashboard() {
             <CardTitle>Expense List</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Purpose</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Submitter</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Flag</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedExpenses.map((exp) => (
-                  <TableRow key={exp.id}>
-                    <TableCell>{exp.purpose}</TableCell>
-                    <TableCell>{exp.category}</TableCell>
-                    <TableCell>{exp.submitter.name}</TableCell>
-                    <TableCell>Rs. {exp.amount}</TableCell>
-                    <TableCell>{exp.date}</TableCell>
-                    <TableCell>
-                      <span
-                        className={`px-2 py-1 rounded ${
-                          statusColor[exp.status]
-                        }`}
-                      >
-                        {exp.status}
-                      </span>
-                    </TableCell>
-                    <TableCell>{exp.flag}</TableCell>
+            {sortedExpenses.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Purpose</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Submitter</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Flag</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {sortedExpenses.map((exp) => (
+                    <TableRow key={exp.id}>
+                      <TableCell>{exp.purpose}</TableCell>
+                      <TableCell>{exp.category}</TableCell>
+                      <TableCell>{exp.submitter.name}</TableCell>
+                      <TableCell>Rs. {exp.amount}</TableCell>
+                      <TableCell>{exp.date.split("T")[0]}</TableCell>
+                      <TableCell>
+                        <span
+                          className={`px-2 py-1 rounded ${
+                            statusColor[exp.status]
+                          }`}
+                        >
+                          {exp.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">{exp.flag}</span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-center text-gray-500 py-8">
+                No expenses found
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

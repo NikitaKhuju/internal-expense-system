@@ -1,4 +1,5 @@
 import Expense from "../models/Expense.js";
+import User from "../models/User.js";
 
 // Create Expense
 export const createExpense = async (req, res) => {
@@ -12,6 +13,12 @@ export const createExpense = async (req, res) => {
         .json({ message: "Please provide all required fields" });
     }
 
+    // Get user details
+    const user = await User.findById(req.user.id).select("name role");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     const expense = await Expense.create({
       purpose,
       amount,
@@ -20,8 +27,8 @@ export const createExpense = async (req, res) => {
       flag: flag || "Low", // default flag if not provided
       status: "Pending", // default status
       submitter: {
-        id: req.user.id,
-        name: req.user.name,
+        id: user._id.toString(),
+        name: user.name,
       }, // link to logged-in user
     });
 
@@ -36,11 +43,13 @@ export const getExpenses = async (req, res) => {
   try {
     let expenses;
     if (req.user.role === "admin") {
-      expenses = await Expense.find().populate("submitter", "name email role");
+      expenses = await Expense.find().sort({ createdAt: -1 });
     } else {
-      expenses = await Expense.find({ submitter: req.user.id });
+      expenses = await Expense.find({
+        "submitter.id": req.user.id,
+      }).sort({ createdAt: -1 });
     }
-    res.json(expenses);
+    res.status(200).json(expenses);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -71,8 +80,8 @@ export const updateExpense = async (req, res) => {
     expense.purpose = purpose || expense.purpose;
     expense.amount = amount || expense.amount;
     expense.category = category || expense.category;
-    expense.date = date || expense.date;
-    expense.flag = flag || expense.flag;
+    expense.date = expense.date;
+    expense.flag = expense.flag;
     if (status && req.user.role === "admin") expense.status = status;
 
     const updated = await expense.save();

@@ -5,10 +5,10 @@ import jwt from "jsonwebtoken";
 //Register or signup
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, department, role } = req.body;
 
     if (!name || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
+      return res.status(400).json({ message: "Required fields missing" });
     }
 
     const userExists = await User.findOne({ email });
@@ -23,10 +23,18 @@ export const registerUser = async (req, res) => {
       name,
       email,
       password: hashedPassword,
+      phone: "",
+      department,
       role: role || "staff",
     });
+
     res.status(201).json({
-      message: "User registered successfully",
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      department: user.department,
+      role: user.role,
+      createdAt: user.createdAt,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -61,7 +69,10 @@ export const loginUser = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
+        department: user.department,
         role: user.role,
+        createdAt: user.createdAt,
       },
     });
   } catch (error) {

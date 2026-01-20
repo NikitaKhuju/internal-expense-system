@@ -1,7 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -12,44 +10,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import {
-  type Expense,
-  type ExpenseFlag,
-  type ExpenseStatus,
-} from "@/models/expense.model";
-
-const expenses: Expense[] = [
-  {
-    id: 1,
-    purpose: "Office Supplies",
-    category: "Stationery",
-    submitter: { id: "u1", name: "John Doe" },
-    amount: 5000,
-    date: "2026-01-18",
-    status: "Pending",
-    flag: "Low",
-  },
-  {
-    id: 2,
-    purpose: "Software License",
-    category: "IT",
-    submitter: { id: "u2", name: "Mary Smith" },
-    amount: 30000,
-    date: "2026-01-16",
-    status: "Approved",
-    flag: "High",
-  },
-  {
-    id: 3,
-    purpose: "Client Meeting",
-    category: "Food",
-    submitter: { id: "u3", name: "Alice Brown" },
-    amount: 8000,
-    date: "2026-01-15",
-    status: "Rejected",
-    flag: "Medium",
-  },
-];
+import { type ExpenseFlag, type ExpenseStatus } from "@/models/expense.model";
+import { useExpenseViewModel } from "@/viewmodels/useExpenseViewModel";
 
 const statusColor: Record<ExpenseStatus, string> = {
   Approved: "bg-green-100 text-green-700",
@@ -64,15 +26,29 @@ const flagColor: Record<ExpenseFlag, string> = {
 };
 
 export default function Expenses() {
-  const filteredExpenses = useMemo(() => {
+  const { expenses, loading, error, fetchExpenses } = useExpenseViewModel();
+
+  useEffect(() => {
+    fetchExpenses();
+  }, []);
+
+  const sortedExpenses = useMemo(() => {
     return [...expenses].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
-  }, []);
+  }, [expenses]);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold mb-6">Expenses</h1>
+
+      {loading && <p className="text-gray-500 mb-4">Loading expenses...</p>}
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
 
       <div className="grid md:grid-cols-4 gap-4 mb-6">
         {(["Pending", "Approved", "Rejected"] as ExpenseStatus[]).map(
@@ -97,7 +73,7 @@ export default function Expenses() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Expense Requests</CardTitle>
+          <CardTitle>Expenses</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -114,13 +90,13 @@ export default function Expenses() {
             </TableHeader>
 
             <TableBody>
-              {filteredExpenses.map((e) => (
+              {sortedExpenses.map((e) => (
                 <TableRow key={e.id}>
                   <TableCell>{e.purpose}</TableCell>
                   <TableCell>{e.category}</TableCell>
                   <TableCell>{e.submitter.name}</TableCell>
                   <TableCell>Rs. {e.amount}</TableCell>
-                  <TableCell>{e.date}</TableCell>
+                  <TableCell>{e.date.split("T")[0]}</TableCell>
                   <TableCell>
                     <Badge className={statusColor[e.status]}>{e.status}</Badge>
                   </TableCell>

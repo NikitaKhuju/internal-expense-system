@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+// src/pages/Staffs.tsx
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -10,30 +11,37 @@ import {
 } from "@/components/ui/table";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-// Dummy staff data for now
-const initialStaffs = [
-  { id: 1, name: "John Doe", email: "john@example.com", role: "Manager" },
-  { id: 2, name: "Jane Smith", email: "jane@example.com", role: "Staff" },
-  { id: 3, name: "Alice Johnson", email: "alice@example.com", role: "Staff" },
-];
+import { useUserViewModel } from "@/viewmodels/useUserViewModel";
 
 export default function Staffs() {
-  const [staffs, setStaffs] = useState(initialStaffs);
+  const { users, loading, error, fetchAllStaff } = useUserViewModel();
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchAllStaff();
+  }, []);
 
   // Filter staff based on search
   const filteredStaffs = useMemo(
     () =>
-      staffs.filter(
+      users.filter(
         (staff) =>
           staff.name.toLowerCase().includes(search.toLowerCase()) ||
           staff.email.toLowerCase().includes(search.toLowerCase()) ||
-          staff.role.toLowerCase().includes(search.toLowerCase())
+          (staff.department &&
+            staff.department.toLowerCase().includes(search.toLowerCase()))
       ),
-    [staffs, search]
+    [users, search]
   );
+
+  if (loading && users.length === 0) {
+    return (
+      <div className="p-6 flex items-center justify-center h-screen">
+        <p className="text-lg">Loading staff...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 flex flex-col h-full">
@@ -49,11 +57,17 @@ export default function Staffs() {
         </Button>
       </div>
 
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+
       {/* Search input */}
       <div className="mb-4">
         <input
           type="text"
-          placeholder="Search staff by name, email, or role..."
+          placeholder="Search staff by name, email, or department..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -65,25 +79,31 @@ export default function Staffs() {
         <Table className="w-full">
           <TableHeader>
             <TableRow>
-              <TableHead>ID</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Department</TableHead>
+              <TableHead>Joined</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredStaffs.length > 0 ? (
               filteredStaffs.map((staff) => (
                 <TableRow key={staff.id}>
-                  <TableCell>{staff.id}</TableCell>
                   <TableCell>{staff.name}</TableCell>
                   <TableCell>{staff.email}</TableCell>
-                  <TableCell>{staff.role}</TableCell>
+                  <TableCell>{staff.phone || "N/A"}</TableCell>
+                  <TableCell>{staff.department || "N/A"}</TableCell>
+                  <TableCell>
+                    {staff.createdAt
+                      ? new Date(staff.createdAt).toLocaleDateString()
+                      : "N/A"}
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="text-center">
+                <TableCell colSpan={5} className="text-center">
                   No staff found
                 </TableCell>
               </TableRow>

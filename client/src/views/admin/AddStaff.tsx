@@ -25,7 +25,6 @@ const departments = [
 export default function AddStaff() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [department, setDepartment] = useState("");
   const [password, setPassword] = useState("");
 
@@ -46,30 +45,35 @@ export default function AddStaff() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name || !email || !phone || !department || !password) {
+    // Validate required fields
+    if (!name || !email || !department || !password) {
       alert("Please fill all required fields.");
       return;
     }
 
-    const staffData = { name, email, phone, department, password };
+    const staffData = { name, email, department, password };
 
     try {
-      const res = await fetch("/api/staff", {
+      // Call backend route
+      const res = await fetch("http://localhost:5000/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(staffData),
       });
 
       const data = await res.json();
+
       if (res.ok) {
         alert(`Staff added successfully!\nGenerated password: ${password}`);
-        // Reset form and generate new password
+
+        // Reset form
         setName("");
         setEmail("");
-        setPhone("");
         setDepartment("");
+
+        // Generate new password for next staff
         const chars =
-          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
+          "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         let newPwd = "";
         for (let i = 0; i < 12; i++) {
           newPwd += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -113,19 +117,6 @@ export default function AddStaff() {
                 placeholder="Enter email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
-                className="mt-2"
-              />
-            </div>
-
-            <div className="flex flex-col">
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="Enter phone number"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
                 required
                 className="mt-2"
               />

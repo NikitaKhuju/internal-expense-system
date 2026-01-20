@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+// src/pages/Requests.tsx
+import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,46 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-import {
-  type Expense,
-  type ExpenseCategory,
-  type ExpenseFlag,
-} from "@/models/expense.model";
-import { Sidebar } from "@/components/Sidebar";
-
-const expenses: Expense[] = [
-  {
-    id: 1,
-    purpose: "Office Supplies",
-    category: "Stationery",
-    submitter: { id: "u1", name: "John Doe" },
-    amount: 5000,
-    date: "2026-01-18",
-    status: "Pending",
-    flag: "Low",
-  },
-  {
-    id: 2,
-    purpose: "Software License",
-    category: "IT",
-    submitter: { id: "u2", name: "Mary Smith" },
-    amount: 30000,
-    date: "2026-01-16",
-    status: "Approved",
-    flag: "High",
-  },
-  {
-    id: 3,
-    purpose: "Client Meeting",
-    category: "Food",
-    submitter: { id: "u3", name: "Alice Brown" },
-    amount: 8000,
-    date: "2026-01-15",
-    status: "Pending",
-    flag: "Medium",
-  },
-];
+import { useExpenseViewModel } from "@/viewmodels/useExpenseViewModel";
+import type { ExpenseCategory, ExpenseFlag } from "@/models/expense.model";
 
 const flagColor: Record<ExpenseFlag, string> = {
   Low: "bg-green-100 text-green-700",
@@ -66,6 +29,15 @@ const flagColor: Record<ExpenseFlag, string> = {
 };
 
 export default function Requests() {
+  const {
+    expenses,
+    loading,
+    error,
+    fetchExpenses,
+    approveExpense,
+    rejectExpense,
+  } = useExpenseViewModel();
+
   const [purposeSearch, setPurposeSearch] = useState("");
   const [submitterSearch, setSubmitterSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<ExpenseCategory | "all">(
@@ -73,7 +45,11 @@ export default function Requests() {
   );
   const [flagFilter, setFlagFilter] = useState<ExpenseFlag | "all">("all");
 
-  //Filtering
+  useEffect(() => {
+    fetchExpenses();
+  }, []);
+
+  // Filtering
   const pendingExpenses = useMemo(() => {
     return expenses
       .filter((e) => e.status === "Pending")
@@ -94,66 +70,120 @@ export default function Requests() {
       )
       .filter((e) => (flagFilter === "all" ? true : e.flag === flagFilter))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [purposeSearch, submitterSearch, categoryFilter, flagFilter]);
+  }, [expenses, purposeSearch, submitterSearch, categoryFilter, flagFilter]);
+
+  const handleApprove = async (id: string) => {
+    try {
+      await approveExpense(id);
+      alert("Expense approved successfully!");
+    } catch (err) {
+      console.error("Error approving expense:", err);
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    try {
+      await rejectExpense(id);
+      alert("Expense rejected successfully!");
+    } catch (err) {
+      console.error("Error rejecting expense:", err);
+    }
+  };
+
+  if (loading && expenses.length === 0) {
+    return (
+      <div className="p-6 flex items-center justify-center h-screen">
+        <p className="text-lg">Loading requests...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-screen">
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <h1 className="text-2xl font-bold mb-6">Pending Requests</h1>
-        <Card className="mb-6">
-          <CardContent className="p-4 flex flex-wrap items-center gap-4">
-            <Input
-              placeholder="Search by purpose..."
-              className="w-64"
-              value={purposeSearch}
-              onChange={(e) => setPurposeSearch(e.target.value)}
-            />
-            <Input
-              placeholder="Search by submitter..."
-              className="w-64"
-              value={submitterSearch}
-              onChange={(e) => setSubmitterSearch(e.target.value)}
-            />
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <h1 className="text-2xl font-bold mb-6">Pending Requests</h1>
 
-            <Select
-              value={categoryFilter}
-              onValueChange={(v) =>
-                setCategoryFilter(v as ExpenseCategory | "all")
-              }
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="IT">IT</SelectItem>
-                <SelectItem value="Food">Food</SelectItem>
-                <SelectItem value="Stationery">Stationery</SelectItem>
-              </SelectContent>
-            </Select>
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
 
-            <Select
-              value={flagFilter}
-              onValueChange={(v) => setFlagFilter(v as ExpenseFlag | "all")}
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by flag" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Flags</SelectItem>
-                <SelectItem value="Low">Low</SelectItem>
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="High">High</SelectItem>
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
+      <Card className="mb-6">
+        <CardContent className="p-4 flex flex-wrap items-center gap-4">
+          <Input
+            placeholder="Search by purpose..."
+            className="w-64"
+            value={purposeSearch}
+            onChange={(e) => setPurposeSearch(e.target.value)}
+          />
+          <Input
+            placeholder="Search by submitter..."
+            className="w-64"
+            value={submitterSearch}
+            onChange={(e) => setSubmitterSearch(e.target.value)}
+          />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending Expense Requests</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <Select
+            value={categoryFilter}
+            onValueChange={(v) =>
+              setCategoryFilter(v as ExpenseCategory | "all")
+            }
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Filter by category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="Office Supplies">Office Supplies</SelectItem>
+              <SelectItem value="IT / Software">IT / Software</SelectItem>
+              <SelectItem value="Travel">Travel</SelectItem>
+              <SelectItem value="Food & Beverages">Food & Beverages</SelectItem>
+              <SelectItem value="Utilities">Utilities</SelectItem>
+              <SelectItem value="Marketing & Advertising">
+                Marketing & Advertising
+              </SelectItem>
+              <SelectItem value="Training & Development">
+                Training & Development
+              </SelectItem>
+              <SelectItem value="Maintenance & Repairs">
+                Maintenance & Repairs
+              </SelectItem>
+              <SelectItem value="Employee Benefits">
+                Employee Benefits
+              </SelectItem>
+              <SelectItem value="Miscellaneous">Miscellaneous</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={flagFilter}
+            onValueChange={(v) => setFlagFilter(v as ExpenseFlag | "all")}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Filter by flag" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Flags</SelectItem>
+              <SelectItem value="Low">Low</SelectItem>
+              <SelectItem value="Medium">Medium</SelectItem>
+              <SelectItem value="High">High</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            Pending Expense Requests ({pendingExpenses.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {pendingExpenses.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">
+              No pending requests found
+            </p>
+          ) : (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -174,15 +204,27 @@ export default function Requests() {
                     <TableCell>{e.category}</TableCell>
                     <TableCell>{e.submitter.name}</TableCell>
                     <TableCell>Rs. {e.amount}</TableCell>
-                    <TableCell>{e.date}</TableCell>
+                    <TableCell>
+                      {new Date(e.date).toLocaleDateString()}
+                    </TableCell>
                     <TableCell>
                       <Badge className={flagColor[e.flag]}>{e.flag}</Badge>
                     </TableCell>
                     <TableCell className="space-x-2">
-                      <Button size="sm" variant="outline">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleApprove(e.id || e._id || "")}
+                        disabled={loading}
+                      >
                         Approve
                       </Button>
-                      <Button size="sm" variant="destructive">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleReject(e.id || e._id || "")}
+                        disabled={loading}
+                      >
                         Reject
                       </Button>
                     </TableCell>
@@ -190,9 +232,9 @@ export default function Requests() {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

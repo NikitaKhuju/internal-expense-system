@@ -1,19 +1,30 @@
 export type ExpenseStatus = "Pending" | "Approved" | "Rejected";
 export type ExpenseFlag = "Low" | "Medium" | "High";
-export type ExpenseCategory = "IT" | "Food" | "Stationery" | "Travel";
-
-export interface Submitter {
-  id: string;
-  name: string;
-}
+export type ExpenseCategory =
+  | "Office Supplies"
+  | "Travel"
+  | "Food & Beverages"
+  | "IT / Software"
+  | "Utilities"
+  | "Training & Development"
+  | "Marketing & Advertising"
+  | "Maintenance & Repairs"
+  | "Employee Benefits"
+  | "Miscellaneous";
 
 export interface Expense {
-  id: number;
+  _id?: string; // MongoDB ID
+  id: string; // Use string instead of number
   purpose: string;
-  category: ExpenseCategory;
+  category: string;
+  submitter: {
+    id: string; // Changed from number to string
+    name: string;
+  };
   amount: number;
-  date: string; // ISO string
-  status: ExpenseStatus; // Pending by default
+  date: string;
+  status: ExpenseStatus;
   flag: ExpenseFlag;
-  submitter: Submitter;
+  createdAt?: string;
+  updatedAt?: string;
 }

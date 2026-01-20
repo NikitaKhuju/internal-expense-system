@@ -11,6 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useExpenseViewModel } from "@/viewmodels/useExpenseViewModel";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/App";
 
 const categories = [
   "Office Supplies",
@@ -33,18 +36,76 @@ export default function AddExpense() {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
   const [flag, setFlag] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { createExpense, error } = useExpenseViewModel();
+  const navigate = useNavigate();
+  const { role } = useAuth();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const expense = { purpose, category, amount, date, status, flag };
-    console.log("Expense submitted:", expense);
-    alert("Expense added! ");
-    // API callling
+
+    // Validate all fields
+    if (!purpose || !category || !amount || !date || !flag) {
+      alert("Please fill in all required fields");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      await createExpense({
+        purpose,
+        category,
+        amount: parseFloat(amount),
+        date,
+        flag,
+      });
+
+      alert("Expense added successfully!");
+
+      // Reset form
+      setPurpose("");
+      setCategory("");
+      setAmount("");
+      setDate("");
+      setFlag("");
+
+      // Navigate back based on role
+      if (role === "admin") {
+        navigate("/");
+      } else {
+        navigate("/staff");
+      }
+    } catch (err: any) {
+      console.error("Error adding expense:", err);
+      alert(
+        err.response?.data?.message ||
+          "Failed to add expense. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (role === "admin") {
+      navigate("/");
+    } else {
+      navigate("/staff");
+    }
   };
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Add New Expense</h1>
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 max-w-lg mx-auto">
+          {error}
+        </div>
+      )}
+
       <Card className="max-w-lg mx-auto">
         <CardHeader>
           <CardTitle>Expense Details</CardTitle>
@@ -52,8 +113,7 @@ export default function AddExpense() {
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <Label htmlFor="purpose">Purpose</Label>
-
+              <Label htmlFor="purpose">Purpose *</Label>
               <Input
                 id="purpose"
                 placeholder="Enter purpose"
@@ -61,12 +121,17 @@ export default function AddExpense() {
                 onChange={(e) => setPurpose(e.target.value)}
                 required
                 className="mt-2"
+                disabled={isSubmitting}
               />
             </div>
 
             <div>
-              <Label htmlFor="category">Category</Label>
-              <Select onValueChange={setCategory} value={category}>
+              <Label htmlFor="category">Category *</Label>
+              <Select
+                onValueChange={setCategory}
+                value={category}
+                disabled={isSubmitting}
+              >
                 <SelectTrigger id="category" className="w-full mt-2">
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
@@ -81,20 +146,23 @@ export default function AddExpense() {
             </div>
 
             <div>
-              <Label htmlFor="amount">Amount</Label>
+              <Label htmlFor="amount">Amount (Rs.) *</Label>
               <Input
                 id="amount"
                 type="number"
+                step="0.01"
+                min="0"
                 placeholder="Enter amount"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 required
                 className="mt-2"
+                disabled={isSubmitting}
               />
             </div>
 
             <div>
-              <Label htmlFor="date">Date</Label>
+              <Label htmlFor="date">Date *</Label>
               <Input
                 id="date"
                 type="date"
@@ -102,14 +170,19 @@ export default function AddExpense() {
                 onChange={(e) => setDate(e.target.value)}
                 required
                 className="mt-2"
+                disabled={isSubmitting}
               />
             </div>
 
             <div>
-              <Label htmlFor="flag">Flag</Label>
-              <Select onValueChange={setFlag} value={flag}>
+              <Label htmlFor="flag">Priority Flag *</Label>
+              <Select
+                onValueChange={setFlag}
+                value={flag}
+                disabled={isSubmitting}
+              >
                 <SelectTrigger id="flag" className="w-full mt-2">
-                  <SelectValue placeholder="Select flag" />
+                  <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
                 <SelectContent>
                   {flags.map((f) => (
@@ -121,9 +194,20 @@ export default function AddExpense() {
               </Select>
             </div>
 
-            <Button type="submit" className="w-full mt-4">
-              Add Expense
-            </Button>
+            <div className="flex gap-3 mt-6">
+              <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                {isSubmitting ? "Adding..." : "Add Expense"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={handleCancel}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
